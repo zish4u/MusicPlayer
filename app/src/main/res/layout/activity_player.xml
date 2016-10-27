@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="test.musicplayer.Player">
+
+    <SeekBar
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/seekBar"
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="10dp"
+        android:layout_marginBottom="@dimen/bottomMargin"
+        android:layout_above="@+id/play_btn"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true" />
+
+
+    <Button
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:background="@drawable/blkplay"
+        android:id="@+id/play_btn"
+        android:layout_marginBottom="@dimen/bottomMargin"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true" />
+
+    <Button
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:background="@drawable/blkfast_nxt"
+        android:id="@+id/ffrwd_btn"
+        android:layout_marginLeft="@dimen/buttonMarginThree"
+        android:layout_marginRight="@dimen/buttonMarginOne"
+        android:layout_marginBottom="@dimen/bottomMargin"
+        android:layout_alignParentBottom="true"
+        android:layout_toRightOf="@+id/play_btn"
+        android:layout_toEndOf="@+id/play_btn" />
+
+    <Button
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:background="@drawable/blkfast_back"
+        android:id="@+id/fback_btn"
+        android:layout_marginRight="@dimen/buttonMarginThree"
+        android:layout_marginLeft="@dimen/buttonMarginTwo"
+        android:layout_marginBottom="@dimen/bottomMargin"
+        android:layout_alignParentBottom="true"
+        android:layout_toLeftOf="@+id/play_btn"
+        android:layout_toStartOf="@+id/play_btn" />
+    <Button
+        android:layout_width="70dp"
+        android:layout_height="60dp"
+        android:background="@drawable/blkplay"
+        android:id="@+id/nxt_btn"
+        android:layout_marginLeft="@dimen/buttonMarginOne"
+        android:layout_marginRight="@dimen/buttonMarginTwo"
+        android:layout_marginBottom="@dimen/bottomMargin"
+        android:layout_alignParentBottom="true"
+        android:layout_toEndOf="@+id/ffrwd_btn"
+        android:layout_toRightOf="@+id/ffrwd_btn" />
+
+    <Button
+        android:layout_width="70dp"
+        android:layout_height="60dp"
+        android:background="@drawable/blkplay1"
+        android:id="@+id/prev_btn"
+        android:layout_marginLeft="@dimen/buttonMarginTwo"
+        android:layout_marginRight="@dimen/buttonMarginOne"
+        android:layout_marginBottom="@dimen/bottomMargin"
+        android:layout_alignParentBottom="true"
+        android:layout_toLeftOf="@+id/fback_btn"
+        android:layout_toStartOf="@+id/fback_btn" />
+</RelativeLayout>
