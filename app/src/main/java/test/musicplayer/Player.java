@@ -6,31 +6,40 @@ import android.net.Uri;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.SeekBar;
-
+import android.widget.TextView;
+import java.io.File;
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
+import java.lang.String;
 
 public class Player extends AppCompatActivity implements View.OnClickListener {
 
-    MediaPlayer mediaPlayer;
+    private static MediaPlayer mediaPlayer;
     ArrayList mySongs;
-    int position;
+    private int position;
     Uri u;
-    SeekBar sb;
+    private SeekBar sb;
     Thread updateSeekbar;
-    Button play,fastForward,fastBackward,playNext,playPrev;
+    private ImageButton play,fastForward,fastBackward,playNext,playPrev;
+    TextView seekStartPos,seekEndPos,songName;
+    String[] name;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_player);
-        play=(Button)findViewById(R.id.play_btn);
-        fastForward=(Button)findViewById(R.id.ffrwd_btn);
-        fastBackward=(Button)findViewById(R.id.fback_btn);
-        playNext=(Button)findViewById(R.id.nxt_btn);
-        playPrev=(Button)findViewById(R.id.prev_btn);
+        play=(ImageButton)findViewById(R.id.play_btn);
+        fastForward=(ImageButton)findViewById(R.id.ffrwd_btn);
+        fastBackward=(ImageButton)findViewById(R.id.fback_btn);
+        playNext=(ImageButton)findViewById(R.id.nxt_btn);
+        playPrev=(ImageButton)findViewById(R.id.prev_btn);
         sb=(SeekBar)findViewById(R.id.seekBar);
+        seekStartPos=(TextView)findViewById(R.id.startSeekPos);
+        seekEndPos=(TextView)findViewById(R.id.endSeekPos);
+        songName=(TextView)findViewById(R.id.songTitle);
+
 
         updateSeekbar=new Thread(){
             @Override
@@ -39,15 +48,16 @@ public class Player extends AppCompatActivity implements View.OnClickListener {
                 int currentPosition=0;
                 while(currentPosition<totalDuration){
                     try {
-                        sleep(5000);
+                        sleep(1000);
                         currentPosition=mediaPlayer.getCurrentPosition();
                         sb.setProgress(currentPosition);
+
                     }
                     catch (InterruptedException e){
                         e.printStackTrace();
                     }
                 }
-                //
+
             }
         };
 
@@ -68,13 +78,18 @@ public class Player extends AppCompatActivity implements View.OnClickListener {
         position=b.getInt("pos",0);
         u=Uri.parse(mySongs.get(position).toString());
         mediaPlayer=MediaPlayer.create(getApplicationContext(),u);
-        mediaPlayer.start();
-        sb.setMax(mediaPlayer.getDuration());
         updateSeekbar.start();
+        seekEndPos.setText(" "+songEndTime());
+        sb.setMax(mediaPlayer.getDuration());
+        songName.setText(" "+songTitle(mySongs.get(position).toString()));
+        mediaPlayer.start();
         sb.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
-            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean b) {
 
+                long seconds =(TimeUnit.MILLISECONDS.toSeconds(progress));
+                long minutes = TimeUnit.SECONDS.toMinutes(seconds);
+                seekStartPos.setText(minutes+":"+String.format("%02d",seconds%60));
             }
 
             @Override
@@ -90,16 +105,31 @@ public class Player extends AppCompatActivity implements View.OnClickListener {
 
     }
 
+    public String songEndTime(){
+        long endTime=  mediaPlayer.getDuration();
+        long seconds=TimeUnit.MILLISECONDS.toSeconds(endTime);
+        long minutes=TimeUnit.SECONDS.toMinutes(seconds);
+        String songEnd=minutes+":"+String.format("%02d",seconds%60);
+        return songEnd;
+    }
+
+    public String songTitle(String name){
+        String[] arr=name.split("/");
+        return arr[arr.length-1];
+
+    }
+
     @Override
     public void onClick(View view) {
         int id = view.getId();
         switch (id) {
             case R.id.play_btn:
                 if (mediaPlayer.isPlaying()) {
-                    play.setText("|>");
+                    //play.setOnClickListener();
+                    play.setImageResource(R.drawable.playbutton_selector);
                     mediaPlayer.pause();
                 } else {
-                    play.setText("||");
+                    play.setImageResource(R.drawable.playbutton_selector);
                     mediaPlayer.start();
                 }
                 break;
@@ -115,6 +145,8 @@ public class Player extends AppCompatActivity implements View.OnClickListener {
                 position = (position + 1) % mySongs.size();
                 u = Uri.parse(mySongs.get(position).toString());
                 mediaPlayer = MediaPlayer.create(getApplicationContext(), u);
+                songName.setText(" "+songTitle(mySongs.get(position).toString()));
+                seekEndPos.setText(" "+songEndTime());
                 mediaPlayer.start();
                 sb.setMax(mediaPlayer.getDuration());
                 break;
@@ -124,10 +156,20 @@ public class Player extends AppCompatActivity implements View.OnClickListener {
                 position = (position - 1 < 0) ? mySongs.size() - 1 : position - 1;
                 u = Uri.parse(mySongs.get(position).toString());
                 mediaPlayer = MediaPlayer.create(getApplicationContext(), u);
+                songName.setText(" "+songTitle(mySongs.get(position).toString()));
+                seekEndPos.setText(" " +songEndTime());
                 mediaPlayer.start();
                 sb.setMax(mediaPlayer.getDuration());
                 break;
 
         }
+
+    }
+
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        mediaPlayer.stop();
     }
 }
