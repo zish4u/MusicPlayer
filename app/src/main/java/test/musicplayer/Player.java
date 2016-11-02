@@ -1,12 +1,26 @@
 package test.musicplayer;
 
+import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.net.Uri;
+import android.renderscript.Allocation;
+import android.renderscript.Element;
+import android.renderscript.RenderScript;
+import android.renderscript.Script;
+import android.renderscript.ScriptIntrinsicBlur;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import java.io.File;
@@ -20,11 +34,16 @@ public class Player extends AppCompatActivity implements View.OnClickListener {
     ArrayList mySongs;
     private int position;
     Uri u;
+    RelativeLayout myLayout;
     private SeekBar sb;
     Thread updateSeekbar;
     private ImageButton play,fastForward,fastBackward,playNext,playPrev;
     TextView seekStartPos,seekEndPos,songName;
     String[] name;
+    ImageView albumArt;
+    byte[] art;
+    Bitmap songArt;
+    MediaMetadataRetriever mediaMetadataRetriever;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,6 +58,8 @@ public class Player extends AppCompatActivity implements View.OnClickListener {
         seekStartPos=(TextView)findViewById(R.id.startSeekPos);
         seekEndPos=(TextView)findViewById(R.id.endSeekPos);
         songName=(TextView)findViewById(R.id.songTitle);
+        albumArt=(ImageView)findViewById(R.id.songPic);
+        myLayout=(RelativeLayout)findViewById(R.id.layoutBackground);
 
 
         updateSeekbar=new Thread(){
@@ -68,6 +89,7 @@ public class Player extends AppCompatActivity implements View.OnClickListener {
         playPrev.setOnClickListener(this);
 
         if(mediaPlayer!=null){
+
             mediaPlayer.stop();
             mediaPlayer.release();
         }
@@ -81,6 +103,7 @@ public class Player extends AppCompatActivity implements View.OnClickListener {
         updateSeekbar.start();
         seekEndPos.setText(" "+songEndTime());
         sb.setMax(mediaPlayer.getDuration());
+        songImage();
         songName.setText(" "+songTitle(mySongs.get(position).toString()));
         mediaPlayer.start();
         sb.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -116,7 +139,62 @@ public class Player extends AppCompatActivity implements View.OnClickListener {
     public String songTitle(String name){
         String[] arr=name.split("/");
         return arr[arr.length-1];
+    }
 
+    public void songImage(){
+       mediaMetadataRetriever=new MediaMetadataRetriever();
+       mediaMetadataRetriever.setDataSource(mySongs.get(position).toString());
+       try{
+           art=mediaMetadataRetriever.getEmbeddedPicture();
+           songArt=BitmapFactory.decodeByteArray(art, 0, art.length);
+           albumArt.setImageBitmap(songArt);
+           //setting Song Art Image as a layout background.
+           Bitmap back=blurRenderScript(this,songArt,25);
+           BitmapDrawable layout_background=new BitmapDrawable(back);
+           myLayout.setBackgroundDrawable(layout_background);
+
+       }
+       catch(Exception e){
+            albumArt.setImageResource(R.drawable.music);
+           Drawable myDrawable = getResources().getDrawable(R.drawable.music);
+           Bitmap anImage      = ((BitmapDrawable) myDrawable).getBitmap();
+           myLayout.setBackgroundDrawable(new BitmapDrawable(blurRenderScript(this,anImage,25)));
+        }
+    }
+
+    @SuppressLint("newApi")
+
+    public static Bitmap blurRenderScript(Context context, Bitmap image, int radius){
+        try {
+            image=RGB565toARGB888(image);
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
+        Bitmap bitmap=Bitmap.createBitmap(image.getWidth(),image.getHeight(),Bitmap.Config.ARGB_8888);
+        RenderScript renderScript=RenderScript.create(context);
+        Allocation blurInput=Allocation.createFromBitmap(renderScript,image);
+        Allocation blurOutput=Allocation.createFromBitmap(renderScript,bitmap);
+        ScriptIntrinsicBlur blur=ScriptIntrinsicBlur.create(renderScript, Element.U8_4(renderScript));//Working fine in above 17 api level.
+        blur.setInput(blurInput);  //Working only fine above 17 api level.
+        blur.setRadius(radius);    //Working only fine above 17 api level.
+        blur.forEach(blurOutput);  //Working only fine above 17 api level.
+        blurOutput.copyTo(bitmap); //Working only fine above 17 api level.
+        renderScript.destroy();
+        return bitmap;
+    }
+
+    private static Bitmap RGB565toARGB888(Bitmap img) throws Exception{
+        int numPixels=img.getWidth()*img.getHeight();
+        int[] pixels=new int[numPixels];
+
+        //Get JPEG pixels. Each int is color value for one pixel.
+        img.getPixels(pixels,0,img.getWidth(),0,0,img.getWidth(),img.getHeight());
+        //Create a bitmap of appropriate format.
+        Bitmap result=Bitmap.createBitmap(img.getWidth(),img.getHeight(),Bitmap.Config.ARGB_8888);
+        //set RGB pixels.
+        result.setPixels(pixels,0,result.getWidth(),0,0,result.getWidth(),result.getHeight());
+        return  result;
     }
 
     @Override
@@ -145,6 +223,7 @@ public class Player extends AppCompatActivity implements View.OnClickListener {
                 position = (position + 1) % mySongs.size();
                 u = Uri.parse(mySongs.get(position).toString());
                 mediaPlayer = MediaPlayer.create(getApplicationContext(), u);
+                songImage();
                 songName.setText(" "+songTitle(mySongs.get(position).toString()));
                 seekEndPos.setText(" "+songEndTime());
                 mediaPlayer.start();
@@ -156,6 +235,7 @@ public class Player extends AppCompatActivity implements View.OnClickListener {
                 position = (position - 1 < 0) ? mySongs.size() - 1 : position - 1;
                 u = Uri.parse(mySongs.get(position).toString());
                 mediaPlayer = MediaPlayer.create(getApplicationContext(), u);
+                songImage();
                 songName.setText(" "+songTitle(mySongs.get(position).toString()));
                 seekEndPos.setText(" " +songEndTime());
                 mediaPlayer.start();
